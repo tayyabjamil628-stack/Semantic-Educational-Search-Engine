@@ -1,20 +1,9 @@
-# FILE: main.py
 import os
-from fastapi import FastAPI, HTTPException, Query
-from sentence_transformers import SentenceTransformer
 import psycopg
 from contextlib import asynccontextmanager
-
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-# Dynamically build DSN from environment variables
-DB_DSN = (
-    f"dbname={os.getenv('DB_NAME', 'vectordb')} "
-    f"user={os.getenv('DB_USER', 'admin')} "
-    f"password={os.getenv('DB_PASSWORD', 'password123')} "
-    f"host={os.getenv('DB_HOST', 'localhost')} "
-    f"port={os.getenv('DB_PORT', '5432')}"
-)
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sentence_transformers import SentenceTransformer
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -22,7 +11,27 @@ async def lifespan(app: FastAPI):
     yield
     print("Shutting down API.")
 
+# Initialize the app ONCE
 app = FastAPI(lifespan=lifespan, title="Semantic Search API")
+
+# Attach middleware to the active instance
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+DB_DSN = (
+    f"dbname={os.getenv('DB_NAME', 'vectordb')} "
+    f"user={os.getenv('DB_USER', 'admin')} "
+    f"password={os.getenv('DB_PASSWORD', 'password123')} "
+    f"host={os.getenv('DB_HOST', 'localhost')} "
+    f"port={os.getenv('DB_PORT', '5432')}"
+)
 
 @app.get("/search")
 async def search(q: str = Query(..., min_length=3, description="Search query")):
