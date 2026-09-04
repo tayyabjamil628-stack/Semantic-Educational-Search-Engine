@@ -17,6 +17,7 @@ app = FastAPI(lifespan=lifespan, title="Semantic Search API")
 # Attach middleware to the active instance
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
